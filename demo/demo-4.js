@@ -94,7 +94,7 @@ var TodoApp = Component.create({
         });
         return [
             m('h3', 'Todo'),
-            Component.createElement(NewTask, bucket.simple('newTask'))(),
+            Component.createElement(NewTask, bucket.modelId('newTask'))(),
             m('ul', tasks)
         ];
     }
