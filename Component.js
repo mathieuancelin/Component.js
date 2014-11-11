@@ -24,8 +24,8 @@ var Component = Component || (function() {
                 throw new Error('WTF ???');
             }
             return function(opts) {
+                var firstInit = true;
                 return function (node) {
-                    var firstInit = true;
                     if (!ctrl.render) throw new Error('No render method bro !!!');
                     var base = {};
                     var model  = {};
@@ -40,7 +40,7 @@ var Component = Component || (function() {
                                 var ModelClass = Backbone.Model.extend({});
                                 modelCache[opts._modelId] = new ModelClass();
                             } else {
-                                firstInit = false; 
+                                firstInit = false;
                             }
                             model = modelCache[opts._modelId];
                         } else {
@@ -69,8 +69,11 @@ var Component = Component || (function() {
                         model.set(state);
                         m.endComputation();
                     };
-                    base.redraw = function () {
-                        m.redraw();
+                    base.redraw = function (force) {
+                        m.redraw(force);
+                    };
+                    base.redrawWithStrategy = function (strat) {
+                        m.redraw.strategy(strat);
                     };
                     var app = _.extend(base, ctrl);
                     if (firstInit) {
@@ -79,6 +82,9 @@ var Component = Component || (function() {
                     app.controller = function () {
                         //_.extend(this, ctrl);
                         app.init();
+                        if (firstInit) {
+                            firstInit = false;
+                        }
                     };
                     app.view = function (thectrl) {
                         return app.render(thectrl);
@@ -143,9 +149,9 @@ var Component = Component || (function() {
             }
             return ret;
         },
-        invariant: function(condition, message, a, b, c, d, e, f) {
+        invariant: function(condition, message, a, b, c, d, e, f, g, h, i, j, k, l, m) {
             if (!condition) {
-                var args = [a, b, c, d, e, f];
+                var args = [a, b, c, d, e, f, g, h, i, j, k, l, m];
                 var argIndex = 0;
                 throw new Error("Violation : " + message.replace(/%s/g, function() { return args[argIndex++]; }));
             }
@@ -169,13 +175,34 @@ var Component = Component || (function() {
                         return cache[name];
                     }
                 },
-                simple: function(name) {
+                modelId: function(name) {
                     var id = this.of(name);
                     return {
                         _modelId: id
                     };
                 }
             };
+        },
+        setTimeout: function(func, time) {
+            m.startComputation();
+            return setTimeout(function() {
+                func();
+                m.endComputation();
+            }, time);
+        },
+        setInterval:function(func, time) {
+            m.startComputation();
+            return setInterval(function() {
+                func();
+                m.endComputation();
+            }, time);
+        },
+        defer: function(func) {
+            m.startComputation();
+            return setTimeout(function() {
+                func();
+                m.endComputation();
+            }, 0);
         }
     };
     defaultBucket = publicApi.bucket();
