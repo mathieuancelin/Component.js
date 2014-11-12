@@ -53,7 +53,7 @@ var TaskItem = Component.create({
     }
 });
 
-var TodoApp = Component.closureElement(function() {
+var TodoApp = Component.closureElement(function(opts) {
     var bucket = Component.bucket();
     function init() {
         Dispatcher.on('flip', function(_id) {

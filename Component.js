@@ -120,7 +120,7 @@ var Component = Component || (function() {
         },
         createElement: function(element, opts) {
             if (element.___ClosureConstructor) {
-                element = element();
+                element = element(_.clone(opts));
             }
             return element(opts || {});
         },

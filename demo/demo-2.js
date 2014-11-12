@@ -17,7 +17,7 @@ var model = Component.model({
     ]
 });
 
-var NewTask = Component.closureElement(function() {
+var NewTask = Component.closureElement(function(opts) {
 
     function createTask() {
         var name = model.getState().name || '';
@@ -50,7 +50,7 @@ var TaskItem = Component.create({
     }
 });
 
-var TodoApp = Component.closureElement(function() {
+var TodoApp = Component.closureElement(function(opts) {
 
     function init() {
         Dispatcher.on('flip', function(_id) {
@@ -87,5 +87,5 @@ var TodoApp = Component.closureElement(function() {
     });
 });
 
-Component.render(Component.createElement(TodoApp), document.getElementById('todo'));
+Component.render(Component.createElement(TodoApp), document.getElementById('demo'));
 
