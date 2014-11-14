@@ -7,9 +7,6 @@ Here is an overly complicated Todo app using some kind of [Flux architecture](ht
 
 ```javascript
 var TodoApp = (function() {
-	
-	// cache for component models so they can survive through multiple re-render of components
-	var bucket = Component.bucket();
 
 	// Possible actions of the application
 	var TaskConstants = Component.keyMirror({
