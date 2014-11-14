@@ -1,5 +1,8 @@
 var TodoApp = (function() {
 	
+	// cache for component models so they can survive through multiple re-render of components
+	var bucket = Component.bucket();
+
 	// Possible actions of the application
 	var TaskConstants = Component.keyMirror({
 	    SAVE_NEW_TASK: null,
@@ -97,38 +100,44 @@ var TodoApp = (function() {
 	})();
 
 	// Component for task creation and removal
-	var NewTask = Component.create({
-	    initialState: function() {
-	        return {
-	            taskName: ''
-	        };
-	    },
-	    clearTaskName: function() {
-	        this.setState({
+	var NewTask = Component.closureElement(function(props) {
+
+		var model = Component.model('newtask', {
+            taskName: ''
+        });
+
+	    function clearTaskName() {
+	        model.setState({
 	            taskName: ''
 	        });
-	    },
-	    init: function() {
-	        TaskStore.on(TaskConstants.TASKS_ADDED, this.clearTaskName.bind(this));
-	    },
-	    updateName: function(e) {
-	        this.setState({taskName: e.target.value});
-	    },
-	    save: function() {
-	        if (this.getState().taskName && this.getState().taskName !== '') {
-	            TaskActions.saveNewTask(this.getState().taskName);
+	    }
+
+	    function init() {
+	        TaskStore.on(TaskConstants.TASKS_ADDED, clearTaskName);
+	    }
+
+	    function updateName(e) {
+	        model.setState({taskName: e.target.value});
+	    }
+
+	    function save() {
+	        if (model.getState().taskName && model.getState().taskName !== '') {
+	            TaskActions.saveNewTask(model.getState().taskName);
 	        }
-	    },
-	    deleteAll: function() {
+	    }
+
+	    function deleteAll() {
 	        TaskActions.deleteDone();
-	    },
-	    keyPress: function(e) {
+	    }
+
+	    function keyPress(e) {
 	        if (e.key === 'Enter') {
-	            this.save();
+	            save();
 	            e.preventDefault();
 	        }
-	    },
-	    render: function() {
+	    }
+
+	    return Component.create(model, init, function() {
 	    	return m('div', 
 	    		m('div', { className: "row" }, 
 	    			m('form', { role: 'form' }, [
@@ -137,9 +146,9 @@ var TodoApp = (function() {
     							placeholder: "What do you have to do ?", 
     							type: "text", 
     							className: "form-control", 
-    							value: this.getState().taskName, 
-    							onchange: this.updateName.bind(this), 
-    							onkeypress: this.keyPress.bind(this) 
+    							value: model.getState().taskName, 
+    							onchange: updateName, 
+    							onkeypress: keyPress 
     						})
 						),
     					m('div', { className: "form-group" }, 
@@ -147,7 +156,7 @@ var TodoApp = (function() {
     							m('button', 
 									{
 										type: "button", 
-										onclick: this.save.bind(this), 
+										onclick: save, 
 										className: "btn btn-success"
 									},
     								m('span', { 
@@ -157,7 +166,7 @@ var TodoApp = (function() {
                                 m('button', 
                             		{
                                 		type: "button", 
-                                		onclick: this.deleteAll.bind(this), 
+                                		onclick: deleteAll, 
                                 		className: "btn btn-danger"
                                 	}, 
                                 	m('span', { 
@@ -169,75 +178,75 @@ var TodoApp = (function() {
     				])
 				)
 			);
-	    }
+	    });
 	});
 
 	// Component to display the state of a particular task
-	var TaskItem = Component.create({
-	    initialState: function () {
-	        return {
-	            done: this.props().task.done
-	        };
-	    },
-	    change: function() {
-	        TaskActions.changeTaskState(this.props().task._id, !this.getState().done);
-	        this.setState({
-	            done: !this.getState().done
+	var TaskItem = Component.closureElement(function(props) {
+
+		var model = Component.model(props.task._id, {
+            done: props.task.done
+        });
+
+	    function change() {
+	        TaskActions.changeTaskState(props.task._id, !model.getState().done);
+	        model.setState({
+	            done: !model.getState().done
 	        });
-	    },
-	    render: function () {
+	    }
+
+	    return Component.create(function () {
 	        var classes = Component.classSet({
 	            'task-done': true,
 	            'label': true,
-	            'label-success': this.getState().done,
-	            'label-default': !this.getState().done
+	            'label-success': model.getState().done,
+	            'label-default': !model.getState().done
 	        });
 	        return m('li', { className: "list-group-item" },
 	        	m('div', { className: "row" }, 
 	        		[
-	        			m('div', { className: "col-md-10" }, this.props().task.name),
+	        			m('div', { className: "col-md-10" }, props.task.name),
 	        			m('div', { className: "col-md-2" }, 
 	        				m('span', { 
 	        					className: classes, 
-	        					onclick: this.change.bind(this), 
+	        					onclick: change, 
 	        					style: 'cursor: pointer;' 
 	        				}, 'Done')
 	    				)
 	        		]
 	    		)
 	    	);
-	    }
+	    });
 	});
 
-	// cache for component models so they can survive through multiple re-render of components
-	var bucket = Component.bucket();
-
 	// The final application combining all the components
-	var app = Component.create({
-	    initialState: function() {
-	        return {
-	            tasks: []
-	        };
-	    },
-	    reloadTasks: function() {
-	        this.setState({
+	var app = Component.closureElement(function(props) {
+
+		var model = Component.model('todo', {
+            tasks: []
+        });
+
+	    function reloadTasks() {
+	        model.setState({
 	            tasks: TaskStore.getAllTasks()
 	        });
-	    },
-	    init: function() {
+	    }
+
+	    function init() {
 	        TaskStore.init();
-	        TaskStore.on(TaskConstants.TASKS_CHANGED, this.reloadTasks.bind(this));
-	    },
-	    render: function() {
-	        var displayedTasks = _.map(this.getState().tasks, function(task) {
-	        	return Component.createElement(TaskItem, bucket.of(task._id, {task: task}))();
+	        TaskStore.on(TaskConstants.TASKS_CHANGED, reloadTasks);
+	    }
+
+	    return Component.create(model, init, function() {
+	        var displayedTasks = _.map(model.getState().tasks, function(task) {
+	        	return Component.createElement(TaskItem, {task: task})();
 	        });
 	        return m('div', { className: 'col-md-4' }, [
 	        	m('h3', 'Todo List'),
-	        	Component.createElement(NewTask, bucket.modelId('newTask'))(),
+	        	Component.createElement(NewTask)(),
 	        	m('ul', { className: 'list-group' }, displayedTasks)
 	        ]);
-	    }
+	    });
 	});
 
 	return app;

@@ -4,8 +4,10 @@ var Component = Component || (function() {
     var publicApi = {
         create: function(initial, init, render) {
             var ctrl = {};
-            if (initial && !init && !render) {
+            if (initial && !init && !render && !_.isFunction(initial)) {
                 ctrl = initial; // object oriented construction, other are closure oriented construction
+            } else if (initial && !init && !render && _.isFunction(initial)) {
+                ctrl.render = initial;
             } else if (initial && init && !render && _.isFunction(initial)) {
                 ctrl.initialState = initial();
                 ctrl.render = init;
@@ -98,9 +100,20 @@ var Component = Component || (function() {
                 };
             };
         },
-        model: function(mod) {
-            var ModelClass = Backbone.Model.extend({});
-            var model = new ModelClass();
+        model: function(mod, maybeModel) {
+            var model = {};
+            if (maybeModel) {
+                if (!modelCache[mod]) {
+                    var ModelClass = Backbone.Model.extend({});
+                    modelCache[mod] = new ModelClass();
+                } else {
+                    maybeModel.__alreadyInitialized = true;
+                }
+                model = modelCache[mod];
+            } else {
+                var ModelClass = Backbone.Model.extend({});
+                model = new ModelClass();
+            }
             model.getState = function () {
                 return model.toJSON();
             };
@@ -112,7 +125,13 @@ var Component = Component || (function() {
                 model.set(state);
                 m.endComputation();
             };
-            model.set(mod);
+            if (maybeModel) {
+                if (!maybeModel.__alreadyInitialized) {
+                    model.set(maybeModel); 
+                } 
+            } else {
+                model.set(mod); 
+            }
             return model;
         },
         closureElement: function(func) {
@@ -224,6 +243,9 @@ var Component = Component || (function() {
                 }
             });
             return returnValue.join(' ');
+        },
+        empty: function() {
+            return {};
         }
     };
     defaultBucket = publicApi.bucket();
