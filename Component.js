@@ -92,6 +92,7 @@ var Component = Component || (function() {
                     if (node) {
                         m.module(node, app);
                     } else {
+                        app.controller();
                         return app.view();
                     }
                 };
@@ -203,6 +204,26 @@ var Component = Component || (function() {
                 func();
                 m.endComputation();
             }, 0);
+        },
+        classSet: function(obj) {
+            var returnValue = [];
+            _.map(_.keys(obj), function(key) { 
+                var value = obj[key];
+                if (value === true) {
+                    returnValue.push(key);
+                }
+            });
+            return returnValue.join(' ');
+        },
+        styleSet: function(obj) {
+            var returnValue = [];
+            _.map(_.keys(obj), function(key) { 
+                var value = obj[key];
+                if (value.on === true) {
+                    returnValue.push(key + ': ' + value.value + ';');
+                }
+            });
+            return returnValue.join(' ');
         }
     };
     defaultBucket = publicApi.bucket();
