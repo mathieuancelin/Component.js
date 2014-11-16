@@ -97,44 +97,46 @@ var TodoApp = (function() {
     })();
 
     // Component for task creation and removal
-    var NewTask = Component.closureElement(function(props) {
+    var NewTask = Component.create({
 
-        var model = Component.model('newtask', {
-            taskName: ''
-        });
+        initialState: function() {
+            return {
+                taskName: ''
+            };
+        },
 
-        function clearTaskName() {
-            model.setState({
+        clearTaskName: function() {
+            this.setState({
                 taskName: ''
             });
-        }
+        },
 
-        function init() {
-            TaskStore.on(TaskConstants.TASKS_ADDED, clearTaskName);
-        }
+        init: function() {
+            TaskStore.on(TaskConstants.TASKS_ADDED, this.clearTaskName.bind(this));
+        },
 
-        function updateName(e) {
-            model.setState({taskName: e.target.value});
-        }
+        updateName: function(e) {
+            this.setState({taskName: e.target.value});
+        },
 
-        function save() {
-            if (model.getState().taskName && model.getState().taskName !== '') {
-                TaskActions.saveNewTask(model.getState().taskName);
+        save: function() {
+            if (this.getState().taskName && this.getState().taskName !== '') {
+                TaskActions.saveNewTask(this.getState().taskName);
             }
-        }
+        },
 
-        function deleteAll() {
+        deleteAll: function() {
             TaskActions.deleteDone();
-        }
+        },
 
-        function keyPress(e) {
+        keyPress: function(e) {
             if (e.key === 'Enter') {
-                save();
+                this.save();
                 e.preventDefault();
             }
-        }
+        },
 
-        return Component.create(model, init, function() {
+        render: function() {
             return m('div',
                 m('div', { className: "row" },
                     m('form', { role: 'form' }, [
@@ -143,9 +145,9 @@ var TodoApp = (function() {
                                 placeholder: "What do you have to do ?",
                                 type: "text",
                                 className: "form-control",
-                                value: model.getState().taskName,
-                                onchange: updateName,
-                                onkeypress: keyPress
+                                value: this.getState().taskName,
+                                onchange: this.updateName.bind(this),
+                                onkeypress: this.keyPress.bind(this)
                             })
                         ),
                         m('div', { className: "form-group" },
@@ -153,7 +155,7 @@ var TodoApp = (function() {
                                 m('button',
                                     {
                                         type: "button",
-                                        onclick: save,
+                                        onclick: this.save.bind(this),
                                         className: "btn btn-success"
                                     },
                                     m('span', {
@@ -163,7 +165,7 @@ var TodoApp = (function() {
                                 m('button', 
                                     {
                                         type: "button",
-                                        onclick: deleteAll,
+                                        onclick: this.deleteAll.bind(this),
                                         className: "btn btn-danger"
                                     },
                                     m('span', {
@@ -175,75 +177,81 @@ var TodoApp = (function() {
                     ])
                 )
             );
-        });
+        }
     });
 
     // Component to display the state of a particular task
-    var TaskItem = Component.closureElement(function(props) {
+    var TaskItem = Component.create({
 
-        var model = Component.model(props.task._id, {
-            done: props.task.done
-        });
+        initialState: function() {
+            return {
+                done: this.props().task.done
+            };
+        },
 
-        function change() {
-            TaskActions.changeTaskState(props.task._id, !model.getState().done);
-            model.setState({
-                done: !model.getState().done
+        change: function() {
+            TaskActions.changeTaskState(this.props().task._id, !this.getState().done);
+            this.setState({
+                done: !this.getState().done
             });
-        }
+        },
 
-        return Component.create(function () {
+        render: function () {
             var classes = Component.classSet({
                 'task-done': true,
                 'label': true,
-                'label-success': model.getState().done,
-                'label-default': !model.getState().done
+                'label-success': this.getState().done,
+                'label-default': !this.getState().done
             });
             return m('li', { className: "list-group-item" },
                 m('div', { className: "row" },
                     [
-                        m('div', { className: "col-md-10" }, props.task.name),
+                        m('div', { className: "col-md-10" }, this.props().task.name),
                         m('div', { className: "col-md-2" },
                             m('span', {
                                 className: classes,
-                                onclick: change,
+                                onclick: this.change.bind(this),
                                 style: 'cursor: pointer;'
                             }, 'Done')
                         )
                     ]
                 )
             );
-        });
+        }
     });
 
+    var bucket = Component.bucket();
+
     // The final application combining all the components
-    var app = Component.closureElement(function(props) {
+    var app = Component.create({
 
-        var model = Component.model('todo', {
-            tasks: []
-        });
+        initialState: function() {
+            return {
+                tasks: []
+            };
+        },
 
-        function reloadTasks() {
-            model.setState({
+        reloadTasks: function() {
+            this.setState({
                 tasks: TaskStore.getAllTasks()
             });
-        }
+        },
 
-        function init() {
+        init: function() {
             TaskStore.init();
-            TaskStore.on(TaskConstants.TASKS_CHANGED, reloadTasks);
-        }
+            TaskStore.on(TaskConstants.TASKS_CHANGED, this.reloadTasks.bind(this));
+        },
 
-        return Component.create(model, init, function() {
-            var displayedTasks = _.map(model.getState().tasks, function(task) {
-                return Component.createElement(TaskItem, {task: task})();
+        render: function() {
+            var displayedTasks = _.map(this.getState().tasks, function(task) {
+                return Component.createElement(TaskItem, bucket.of(task._id, {task: task}))();
             });
             return m('div', { className: 'col-md-4' }, [
                 m('h3', 'Todo List'),
-                Component.createElement(NewTask)(),
+                Component.createElement(NewTask, bucket.modelId('newTask'))(),
                 m('ul', { className: 'list-group' }, displayedTasks)
             ]);
-        });
+        }
     });
 
     return app;
