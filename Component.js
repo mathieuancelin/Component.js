@@ -145,7 +145,11 @@ var Component = Component || (function() {
             return element(opts || {});
         },
         render: function(element, node) {
-            return element(node);
+            if (element.app) {
+                return m.module(node, element.app);
+            } else {
+                return element(node);
+            }
         },
         uuid: function() {
             var d = new Date().getTime();

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Demos</title>
+    </head>
+    <body>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+        <div id="demo1"></div>
+        <div id="demo2"></div>
+        <div id="demo3"></div>
+        <script src="./node_modules/jquery/dist/jquery.min.js" type="text/javascript"></script>
+        <script src="./node_modules/underscore/underscore-min.js" type="text/javascript"></script>
+        <script src="./node_modules/backbone/backbone-min.js" type="text/javascript"></script>
+        <script src="./node_modules/sugar/release/sugar-full.development.js" type="text/javascript"></script>
+        <script src="./elem.js" type="text/javascript"></script>
+        <script type="text/javascript">
+        $(function() {
+            
+            var RenderOnlyTodoApp = Elem.el('div', { className: 'col-md-3' }, [
+                Elem.el('h3', 'Todo List'),
+                Elem.el('div',
+                    Elem.el('div', { className: 'row' },
+                        Elem.el('form', { role: 'form' }, [
+                            Elem.el('div', { className: ['form-group', 'col-md-10'] },
+                                Elem.el('input', {
+                                    placeholder: 'What do you have to do ?',
+                                    type: 'text', className: 'form-control', value: '',
+                                }, [])
+                            ),
+                            Elem.el('div', { className: 'form-group' },
+                                Elem.el('div', { className: 'btn-group' }, [
+                                    Elem.el('button', { type: 'button', className: 'btn btn-success' },
+                                        Elem.el('span', {
+                                            className: 'glyphicon glyphicon-floppy-saved'
+                                        }, [])
+                                    ),
+                                    Elem.el('button', { type: 'button', className: 'btn btn-danger' },
+                                        Elem.el('span', { className: 'glyphicon glyphicon-trash' }, [])
+                                    )
+                                ])
+                            )
+                        ])
+                    )
+                ),
+                Elem.el('ul', { className: 'list-group' }, [
+                    Elem.el('li', { className: 'list-group-item' },
+                        Elem.el('div', { className: 'row' }, [
+                            Elem.el('div', { className: 'col-md-10' }, 'Buy some beer'),
+                            Elem.el('div', { className: 'col-md-2' },
+                                Elem.el('span', { onclick: function() { alert('pouet'); }, className: { label: true, labelSuccess: true }, style: { cursor: 'pointer' } }, 'Done')
+                            )
+                        ])
+                    ),
+                    Elem.el('li', { className: 'list-group-item' },
+                        Elem.el('div', { className: 'row' }, [
+                            Elem.el('div', { className: 'col-md-10' }, 'Buy some pizza'),
+                            Elem.el('div', { className: 'col-md-2' },
+                                Elem.el('span', { className: { label: true, labelDefault: true }, style: { cursor: 'pointer' } }, 'Done')
+                            )
+                        ])
+                    )
+                ])
+            ]);
+        
+            var tasks = [];
+            var text = '';
+            function NewTask(props) {
+                function deleteAllDone() {
+                    tasks = _.filter(tasks, function(item) {
+                        return item.done === false;
+                    });
+                }
+                function createNewTask() {
+                    if (text !== '') {
+                        tasks.push({
+                            _id: _.uniqueId('task_'),
+                            name: text,
+                            done: false
+                        });
+                        text = '';
+                    }
+                }
+                function storeName(e) {
+                    text = e.target.value;
+                    if (e.keyCode === 13) {
+                        createNewTask();
+                        e.preventDefault();
+                        return true;
+                    }
+                    return false;
+                }
+                return Elem.el('div',
+                    Elem.el('div', { className: 'row' }, [
+                        Elem.el('form', { role: 'form' }, [
+                            Elem.el('div', { className: ['form-group', 'col-md-10'] },
+                                Elem.el('input', {
+                                    dataKey: 'theinput',
+                                    onchange: storeName,
+                                    onkeyup: storeName,
+                                    onkeydown: storeName,
+                                    value: text,
+                                    placeholder: 'What do you have to do ?',
+                                    type: 'text', className: 'form-control',
+                                }, [])
+                            ),
+                            Elem.el('div', { className: 'form-group' },
+                                Elem.el('div', { className: 'btn-group' }, [
+                                    Elem.el('button', { 
+                                            type: 'button', 
+                                            className: 'btn btn-success',
+                                            onclick: createNewTask
+                                        },
+                                        Elem.el('span', {
+                                            className: 'glyphicon glyphicon-floppy-saved'
+                                        }, [])
+                                    ),
+                                    Elem.el('button', { 
+                                            onclick: deleteAllDone,
+                                            type: 'button', 
+                                            className: 'btn btn-danger' 
+                                        },
+                                        Elem.el('span', { className: 'glyphicon glyphicon-trash' }, [])
+                                    )
+                                ])
+                            )
+                        ])]
+                    )
+                );    
+            }
+
+            function TaskItem(props) {
+                function flipTaskState() {
+                    tasks = _.map(tasks, function(item) {
+                        if (props.task._id === item._id) {
+                            var newTask = _.clone(item);
+                            newTask.done = !props.task.done;
+                            return newTask;
+                        }
+                        return item;
+                    });
+                }
+                return Elem.el('li', { className: 'list-group-item' },
+                    Elem.el('div', { className: 'row' }, [
+                        Elem.el('div', { className: 'col-md-10' }, props.task.name),
+                        Elem.el('div', { className: 'col-md-2' },
+                            Elem.el('span', { 
+                                onclick: flipTaskState, 
+                                className: { 
+                                    label: true, 
+                                    labelSuccess: props.task.done, 
+                                    labelDefault: !props.task.done 
+                                }, 
+                                style: { 
+                                    cursor: 'pointer' 
+                                } 
+                            }, 'Done')
+                        )
+                    ])
+                );
+            }
+
+            function TodoApp() {
+                return Elem.el('div', { className: 'col-md-4' }, [
+                    Elem.el('h3', 'Todo List'),
+                    NewTask(),
+                    Elem.el('ul', { className: 'list-group' }, _.map(tasks, function(task) {
+                        return TaskItem({ task: task });
+                    }))
+                ]);
+            }
+             
+            //Elem.render(RenderOnlyTodoApp, '#demo');
+
+            Elem.renderComponent(function() { 
+                console.log('render');
+                return TodoApp(); 
+            }, '#demo1');
+
+            var model = new (Backbone.Model.extend())({ name: 'Hello' });
+
+            function TextBox() {
+                function updateModel(e) {
+                    model.set('name', e.target.value);
+                }
+                return Elem.el('div', { className: 'col-md-4' }, [
+                    Elem.el('h3', 'Type your name here'),
+                    Elem.el('form', { role: 'form' }, [
+                        Elem.el('div', { className: ['form-group', 'col-md-10'] },
+                            Elem.el('input', {
+                                placeholder: 'Type your name',
+                                type: 'text', 
+                                className: 'form-control', 
+                                value: model.get('name'),
+                                onkeydown: updateModel,
+                                onkeyup: updateModel,
+                                onkeypress: updateModel,
+                                onkeychange: updateModel
+                            }, [])
+                        )
+                    ])
+                ]); 
+            }
+
+            Elem.render(TextBox(), '#demo2');
+
+            function Displays() {
+                return Elem.el('div', { className: 'col-md-4' }, [
+                    Elem.el('h3', 'Displays'),
+                    Elem.el('ul', { className: 'list-group' }, [
+                        Elem.el('li', { className: 'list-group-item' }, 'Name : ' + model.get('name') || ''),
+                        Elem.el('li', { className: 'list-group-item' }, 'Name : ' + model.get('name') || ''),
+                        Elem.el('li', { className: 'list-group-item' }, 'Name : ' + model.get('name') || ''),
+                        Elem.el('li', { className: 'list-group-item' }, 'Name : ' + model.get('name') || ''),
+                    ])
+                ]);   
+            }
+
+            Elem.renderComponent(Displays, '#demo3', model);
+        });
+        </script>
+    </body>
+</html>
