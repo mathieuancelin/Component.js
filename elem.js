@@ -1,6 +1,8 @@
 var Elem = Elem || {};
 (function(exports) {
-
+    var debug = false;
+    var mouseEvents = 'MouseDown MouseEnter MouseLeave MouseMove MouseOut MouseOver MouseUp';
+    var events = 'Wheel Scroll TouchCancel TouchEnd TouchMove TouchStart Click DoubleClick Drag DragEnd DragEnter DragExit DragLeave DragOver DragStart Drop Change Input Submit Focus Blur KeyDown KeyPress KeyUp Copy Cut Paste'.toLowerCase();
     function styleToString(attrs) {
         if (_.isUndefined(attrs)) return '';
         var attrsArray = _.map(_.keys(attrs), function(key) {
@@ -97,6 +99,7 @@ var Elem = Elem || {};
         node.name === 'meta') && _.isUndefined(node.children));
 
         var html = '<' + _.escape(node.name) + ' data-nodeid="' + _.escape(node.__nodeId) + '" ' + objToString(node, context);
+        if (debug) html = html + (' title="' + node.__nodeId) + '"';
 
         if (selfCloseTag) {
             html = html + '/>';
@@ -219,6 +222,21 @@ var Elem = Elem || {};
     };
     exports.renderComponent = function(funct, node, model) {
         if (!renderedNodes[node]) {
+            var eventCallbacks = {};
+            function listenAll() {
+                $(node).on(events, function(e) {
+                    var node = e.target;
+                    var name = node.dataset.nodeid + "_" + e.type;
+                    while(!eventCallbacks[name] && node.dataset.nodeid) {
+                        node = node.parentElement;
+                        name = node.dataset.nodeid + "_" + e.type;
+                    }
+                    if (eventCallbacks[name]) {
+                        eventCallbacks[name](e);    
+                    }
+                });
+            };
+            listenAll();
             var nbrOfRender = 0;
             var oldHandlers = [];
             function render() {
@@ -228,15 +246,12 @@ var Elem = Elem || {};
                 var html = toHtml(tree, { root: node, waitingHandlers: waitingHandlers });
                 $(node).html(html);
                 _.each(oldHandlers, function(handler) {
-                    $(handler.node).off(handler.event);
+                    delete eventCallbacks[handler];
                 });
                 oldHandlers = [];
                 _.each(waitingHandlers, function(handler) {
-                    oldHandlers.push({
-                        event: handler.event.replace('on', ''),
-                        node: '[data-nodeid="' + handler.id + '"]'
-                    });
-                    $('[data-nodeid="' + handler.id + '"]').on(handler.event.replace('on', ''), function() {
+                    oldHandlers.push(handler.id + '_' + handler.event.replace('on', ''));
+                    eventCallbacks[handler.id + '_' + handler.event.replace('on', '')] = function() {
                         var focus = document.activeElement;
                         var key = $(this).data('key');
                         var result = handler.callback.apply({ render: render }, arguments);
@@ -252,7 +267,7 @@ var Elem = Elem || {};
                                 }
                             }
                         }
-                    });   
+                    }
                 });
             }
             if (model && model.on) {
