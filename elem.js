@@ -3,6 +3,7 @@ var Elem = Elem || {};
     var debug = false;
     var mouseEvents = 'MouseDown MouseEnter MouseLeave MouseMove MouseOut MouseOver MouseUp';
     var events = 'Wheel Scroll TouchCancel TouchEnd TouchMove TouchStart Click DoubleClick Drag DragEnd DragEnter DragExit DragLeave DragOver DragStart Drop Change Input Submit Focus Blur KeyDown KeyPress KeyUp Copy Cut Paste'.toLowerCase();
+    var __renderedNodes = {};
     function styleToString(attrs) {
         if (_.isUndefined(attrs)) return '';
         var attrsArray = _.map(_.keys(attrs), function(key) {
@@ -90,24 +91,19 @@ var Elem = Elem || {};
         node.name = node.name || 'unknown';
         node.attrs = node.attrs || {};
         node.children = wrapChildren(node.children);
-
         var selfCloseTag = ((node.name === 'br' ||
-        node.name === 'hr' ||
-        node.name === 'img' ||
-        node.name === 'input' ||
-        node.name === 'link' ||
-        node.name === 'meta') && _.isUndefined(node.children));
-
+                node.name === 'hr' ||
+                node.name === 'img' ||
+                node.name === 'input' ||
+                node.name === 'link' ||
+                node.name === 'meta') && _.isUndefined(node.children));
         var html = '<' + _.escape(node.name) + ' data-nodeid="' + _.escape(node.__nodeId) + '" ' + objToString(node, context);
         if (debug) html = html + (' title="' + node.__nodeId) + '"';
-
         if (selfCloseTag) {
             html = html + '/>';
         } else {
             html = html + '>';
-            if (_.isUndefined(node.children)) {
-                // do nothing
-            } else if (_.isArray(node.children)) {
+            if (_.isArray(node.children)) {
                 var elementsToHtml = _.chain(node.children).map(function(child) {
                     if (_.isFunction(child)) {
                         return child();
@@ -124,16 +120,13 @@ var Elem = Elem || {};
                 html = html + node.children;
             } else if (_.isString(node.children)) {
                 html = html + _.escape(node.children);
-            } else if (_.isNull(node.children)) {
-                // do nothing
             } else if (_.isBoolean(node.children)) {
                 html = html + node.children;
-            } else if (_.isRegExp(node.children)) {
-                // do nothing
             } else if (_.isObject(node.children) && node.children.__isElement) {
                 html = html + toHtml(node.children, context);
             } else if (_.isObject(node.children) && node.children.__asHtml) {
                 html = html + node.children.__asHtml;
+            } else if (_.isRegExp(node.children) || _.isUndefined(node.children) || _.isNull(node.children)) { // do nothing
             } else {
                 html = html + _.escape(node.children.toString());
             }
@@ -147,16 +140,14 @@ var Elem = Elem || {};
             children = attrs;
             attrs = {};
         }
-        var uuid = _.uniqueId('node_');
         return {
             name: name || 'unknown',
             attrs: attrs || {},
             children: wrapChildren(children),
             __isElement: true,
-            __nodeId: uuid,
-            __toHtml: function() {
-                return toHtml(this); 
-            }
+            __nodeId: _.uniqueId('node_'),
+            toHtml: function() { return toHtml(this); },
+            render: function(node) { exports.render(this, node); }
         };
     }
 
@@ -181,9 +172,12 @@ var Elem = Elem || {};
             return '';
         }
     }
-
-    var renderedNodes = {};
-
+    
+    exports.el = el;
+    exports.sel = function(name, children) { return el(name, {}, children); };// simple node sel(name, children)
+    exports.cel = function(name, attrs) { return el(name, attrs, []); };  // node without content, cel(name, attrs)
+    exports.nbsp = function(times) { return el('span', { __asHtml: _.times(times || 1, function() { return '&nbsp;'; }) }); };
+    exports.renderToString = renderToString;
     exports.elements = function() {
         var elems = [];
         _.each(arguments, function(item) {
@@ -191,17 +185,6 @@ var Elem = Elem || {};
         });
         return elems;
     };
-    exports.el = el;
-    exports.sel = function(name, children) {
-        return el(name, {}, children);
-    };
-    exports.cel = function(name, attrs) {
-        return el(name, attrs, []);
-    };
-    exports.nbsp = function(times) {
-        return el('span', { __asHtml: _.times(times || 1, function() { return '&nbsp;'; }) });
-    };
-    exports.renderToString = renderToString;
     exports.render = function(el, node) {
         var ret;
         var waitingHandlers = [];
@@ -221,12 +204,17 @@ var Elem = Elem || {};
         return ret;
     };
     exports.renderComponent = function(funct, node, model) {
-        if (!renderedNodes[node]) {
+        if (!__renderedNodes[node]) {
             var eventCallbacks = {};
-            function listenAll() {
-                $(node).on(events, function(e) {
-                    var node = e.target;
-                    var name = node.dataset.nodeid + "_" + e.type;
+            var nbrOfRender = 0;
+            var oldHandlers = [];
+            // before rendering, listen to all event inside the node and dispatch it to registered callbacks
+            $(node).on(events, function(e) { // TODO : handle mouse event in a clever way
+                var node = e.target;
+                var name = node.dataset.nodeid + "_" + e.type;
+                if (eventCallbacks[name]) {
+                    eventCallbacks[name](e);    
+                } else {
                     while(!eventCallbacks[name] && node.dataset.nodeid) {
                         node = node.parentElement;
                         name = node.dataset.nodeid + "_" + e.type;
@@ -234,11 +222,8 @@ var Elem = Elem || {};
                     if (eventCallbacks[name]) {
                         eventCallbacks[name](e);    
                     }
-                });
-            };
-            listenAll();
-            var nbrOfRender = 0;
-            var oldHandlers = [];
+                }
+            });
             function render() {
                 nbrOfRender = nbrOfRender + 1;
                 var tree = funct(render, node);
@@ -271,23 +256,19 @@ var Elem = Elem || {};
                 });
             }
             if (model && model.on) {
-                model.on('all', function() {
-                    render();
-                });
+                model.on('all', function() { render(); });
             }
             render();
             var api = {
                 render: render,
-                stats: {
-                    nbrOfRender: nbrOfRender
-                },
+                stats: { nbrOfRender: nbrOfRender },
                 toHtmlString: function() { return toHtml(funct(render, node)); }
             };
-            renderedNodes[node] = api;
+            __renderedNodes[node] = api;
             return api;
         } else {
-            renderedNodes[node].render();
-            return renderedNodes[node];
+            __renderedNodes[node].render();
+            return __renderedNodes[node];
         }
     };
 })(Elem);
