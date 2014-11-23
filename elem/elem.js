@@ -152,6 +152,7 @@ var Elem = Elem || {};
     }
 
     function renderToString(el, context) {
+        if (_.isFunction(el)) el = el((context || { props: {}}).props)
         if (!_.isUndefined(el)) {
             if (_.isArray(el)) {
                 return _.chain(el).map(function(item) {
@@ -186,9 +187,14 @@ var Elem = Elem || {};
         return elems;
     };
     exports.render = function(el, node) {
+        var props = {};
+        for (var i in $(node).attributes) {
+          var item = $(node).attributes[i];
+          props[item.name] = item.value;    
+        }
         var ret;
         var waitingHandlers = [];
-        var html = renderToString(el, { root: node, waitingHandlers: waitingHandlers });
+        var html = renderToString(el, { root: node, waitingHandlers: waitingHandlers, props: props });
         if (_.isString(node)) {
             ret = $(node).html(html);
         } else if (node.jquery) {
@@ -226,7 +232,12 @@ var Elem = Elem || {};
             });
             function render() {
                 nbrOfRender = nbrOfRender + 1;
-                var tree = funct(render, node);
+                var props = {};
+                for (var i in $(node).attributes) {
+                  var item = $(node).attributes[i];
+                  props[item.name] = item.value;    
+                }
+                var tree = funct(props, render, node);
                 var waitingHandlers = [];
                 var html = toHtml(tree, { root: node, waitingHandlers: waitingHandlers });
                 $(node).html(html);
