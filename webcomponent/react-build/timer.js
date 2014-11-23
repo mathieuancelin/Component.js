@@ -1,3 +1,14 @@
+function uuid() {
+  var d = new Date().getTime();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = (d + Math.random()*16)%16 | 0;
+    d = Math.floor(d/16);
+    return (c=='x' ? r : (r&0x7|0x8)).toString(16);
+  });
+}
+
+var Dispatcher = Dispatcher || _.extend({}, Backbone.Events);
+
 var Timer = React.createClass({displayName: 'Timer',
   getInitialState: function() {
     return {secondsElapsed: 0};
@@ -21,3 +32,80 @@ var Timer = React.createClass({displayName: 'Timer',
   }
 });
 
+var Emitter = React.createClass({displayName: 'Emitter',
+  getInitialState: function() {
+    return {
+      uuid: '--'
+    };
+  },
+  emit: function() {
+    this.setState({
+      uuid: uuid()
+    });
+    console.log('emitting !!!!');
+    var slug = { uuid: uuid(), message: 'A new message' };
+    console.log(slug);
+    Dispatcher.trigger('chat', slug);
+  },
+  typed: function(e) {
+    console.log(e);
+  },
+  render: function() {
+    return (
+      React.createElement("div", null, 
+        React.createElement("div", null, this.state.uuid), 
+        React.createElement("input", {type: "text", onKeyPress: this.typed}), 
+        React.createElement("button", {type: "button", onClick: this.emit}, "Send message")
+      )
+    );
+  }
+});
+
+var Receiver1 = React.createClass({displayName: 'Receiver1',
+  getInitialState: function() {
+    return {
+      uuid: '--',
+      message: ':::'
+    };
+  },
+  componentDidMount: function() {
+    Dispatcher.on('chat', function(slug) {
+      this.setState({
+        uuid: slug.uuid,
+        message: slug.message
+      });
+    }.bind(this));
+  },
+  render: function() {
+    return (
+      React.createElement("div", null, 
+        React.createElement("div", null, "Receiver 1 last message : ", this.state.uuid, " - ", this.state.message)
+      )
+    );
+  }
+});
+
+var Receiver2 = React.createClass({displayName: 'Receiver2',
+  getInitialState: function() {
+    return {
+      uuid: '--',
+      message: ':::'
+    };
+  },
+  componentDidMount: function() {
+    Dispatcher.on('chat', function(slug) {
+
+      this.setState({
+        uuid: slug.uuid,
+        message: slug.message
+      });
+    }.bind(this));
+  },
+  render: function() {
+    return (
+      React.createElement("div", null, 
+        React.createElement("div", null, "Receiver 2 last message : ", this.state.uuid, " - ", this.state.message)
+      )
+    );
+  }
+});

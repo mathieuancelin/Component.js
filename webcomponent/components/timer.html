@@ -1,6 +1,17 @@
-<script type="text/javascript" src="../node_modules/react/dist/react.min.js"></script>
+<script type="text/javascript" src="../node_modules/react/dist/react.js"></script>
+<script type="text/javascript" src="../node_modules/underscore/underscore-min.js"></script>
+<script type="text/javascript" src="../node_modules/backbone/backbone-min.js"></script>
 <script type="text/javascript" src="./react-webcomponent.js"></script>
+<script type="text/javascript" src="./reactive-elements.js"></script>
 <script type="text/javascript" src="../react-build/timer.js"></script>
 <script>
-    ReactWebComponent.bootstrapComponent(Timer, 'x-timer');
+    document.registerReact('x-timer', Timer);
+    document.registerReact('x-emitter', Emitter);
+    document.registerReact('x-receiver1', Receiver1);
+    document.registerReact('x-receiver2', Receiver2);
+
+    ReactWebComponent.bootstrapComponent('y-timer', Timer);
+    ReactWebComponent.bootstrapComponent('y-emitter', Emitter);
+    ReactWebComponent.bootstrapComponent('y-receiver1', Receiver1);
+    ReactWebComponent.bootstrapComponent('y-receiver2', Receiver2);
 </script>

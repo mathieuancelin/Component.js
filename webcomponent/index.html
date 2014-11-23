@@ -8,13 +8,28 @@
         <link rel="import" href="components/timer.html">
     </head>
     <body>
-        <x-timer id="timer" who="Unicorn"></x-timer>
+        <x-timer id="timer1" who="Unicorn"></x-timer>
+        <y-timer id="timer2" who="Unicorn"></y-timer>
+        <br/><br/>
+        <x-emitter></x-emitter>
+        <br/><br/>
+        <x-receiver1></x-receiver1>
+        <br/><br/>
+        <x-receiver2></x-receiver2>
+        <br/><br/>
+        <y-emitter></y-emitter>
+        <br/><br/>
+        <y-receiver1></y-receiver1>
+        <br/><br/>
+        <y-receiver2></y-receiver2>
+        <br/><br/>
         <button id="changename" type="button">Change !</button>
         <script>
             $(function() {
                 $('#changename').click(function(e) {
                     e.preventDefault();
-                    $('#timer').attr('who', 'Mathieu');
+                    $('#timer1').attr('who', 'Mathieu');
+                    $('#timer2').attr('who', 'Mathieu');
                 });
             });
         </script>
