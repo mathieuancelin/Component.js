@@ -3,26 +3,18 @@
     <head>
         <meta charset="UTF-8">
         <title>Webcomponents test</title>
-        <!--script src="node_modules/polymer-platform/dist/platform.js"></script-->
+        <script src="node_modules/polymer-platform/dist/platform.js"></script>
         <script src="node_modules/jquery/dist/jquery.js"></script>
         <link rel="import" href="components/timer.html">
     </head>
     <body>
-        <x-timer id="timer1" who="Unicorn"></x-timer>
         <y-timer id="timer2" who="Unicorn"></y-timer>
-        <br/><br/>
-        <x-emitter></x-emitter>
-        <br/><br/>
-        <x-receiver1></x-receiver1>
-        <br/><br/>
-        <x-receiver2></x-receiver2>
-        <br/><br/>
         <y-emitter></y-emitter>
-        <br/><br/>
+        <br/>
         <y-receiver1></y-receiver1>
-        <br/><br/>
+        <br/>
         <y-receiver2></y-receiver2>
-        <br/><br/>
+        <br/>
         <button id="changename" type="button">Change !</button>
         <script>
             $(function() {
