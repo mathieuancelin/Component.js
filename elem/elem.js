@@ -46,13 +46,15 @@ var Elem = Elem || {};
             if (key === 'className') {
                 keyName = 'class';
             }
-            if (context && keyName.startsWith('on')) {
-                context.waitingHandlers.push({
-                    root: context.root,
-                    id: node.__nodeId, 
-                    event: keyName,
-                    callback: node.attrs[key]
-                });
+            if (keyName.startsWith('on')) {
+                if (context && context.waitingHandlers) {
+                    context.waitingHandlers.push({
+                        root: context.root,
+                        id: node.__nodeId, 
+                        event: keyName,
+                        callback: node.attrs[key]
+                    });
+                }
                 return undefined;
             } else {
                 var value = node.attrs[key];
@@ -174,6 +176,38 @@ var Elem = Elem || {};
         }
     }   
     
+    exports.model = function(mod) {
+        var theModel = _.extend({}, mod || {});
+        var callbacks = [];
+        var lastCallbacks = [];
+        function fireCallbacks(key, value) { 
+            _.each(callbacks, function(callback) { callback(key, value); }); 
+            _.each(lastCallbacks, function(callback) { callback(key, value); }); 
+        }
+        return {
+            on: function(what, callback) { callbacks.push(callback); },
+            onChange: function(callback) { callbacks.push(callback); },
+            atLast: function(callback) { lastCallbacks.push(callback); },
+            set: function(key, value) {
+                if (_.isUndefined(value)) {
+                    _.map(_.keys(key), function(k) {
+                        theModel[k] = key[k];
+                        fireCallbacks(k, key[k]);   
+                    });
+                } else {
+                    theModel[key] = value;
+                    fireCallbacks(key, value);
+                }
+            },
+            get: function(key) { return theModel[key]; },
+            refresh: function() { fireCallbacks('__refresh', {}); },
+            remove: function(key) {
+                delete theModel[key];
+                fireCallbacks(key, 'deleted');
+            },
+            toJson: function() { return _.clone(theModel); }
+        };
+    };
     exports.el = el;
     exports.sel = function(name, children) { return el(name, {}, children); };// simple node sel(name, children)
     exports.cel = function(name, attrs) { return el(name, attrs, []); };  // node without content, cel(name, attrs)
@@ -208,6 +242,25 @@ var Elem = Elem || {};
             });   
         });
         return ret;
+    };
+    exports.bind = function(opts) {
+        var el = opts.container;
+        var model = opts.model || Elem.model();
+        var render = opts.render;
+        if (opts.init) {
+            opts.init(model);
+        }
+        Elem.render(render(model), el);
+        if (model.atLast) {
+            model.atLast(function(key, value) {
+                Elem.render(render(model), el);
+            });
+        } else {
+            model.on('all', function(key, value) {
+                Elem.render(render(model), el);
+            });
+        }
+        return model;
     };
     exports.renderComponent = function(funct, node, model) {
         if (!__renderedNodes[node]) {

@@ -5,6 +5,7 @@
     </head>
     <body>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+        <div id="timer"></div>
         <div id="demo1"></div>
         <div id="demo2"></div>
         <div id="demo3"></div>
@@ -216,6 +217,19 @@
             }
 
             Elem.renderComponent(Displays, '#demo3', model);
+
+            Elem.bind({
+                container: '#timer',
+                init: function(model) {
+                    model.set('time', 0);
+                    setInterval(function() {
+                        model.set('time', model.get('time') + 1);
+                    }, 1000);
+                },
+                render: function(model) {
+                    return Elem.el('span', 'Elapsed : ' + model.get('time'));
+                }
+            })
         });
         </script>
     </body>

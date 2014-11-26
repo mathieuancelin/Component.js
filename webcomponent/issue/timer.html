@@ -1,0 +1,94 @@
+<script type="text/javascript" src="./node_modules/react/dist/react.js"></script>
+<script type="text/javascript">
+  (function(window, document, undefined) {
+
+      var registrationFunction = (document.registerElement || document.register).bind(document);
+      if (registrationFunction === undefined) {
+          console.error('No registerElement function !!!');
+          return;
+      }
+
+      function registerComponent(tag, reactClass) {
+        var ElementProto = Object.create(HTMLElement.prototype);
+        ElementProto.createdCallback = function() {
+          var reactiveElement = {};
+          var props = {};
+          for (var i in this.attributes) {
+              var item = this.attributes[i];
+              props[item.name] = item.value;    
+          }
+          reactiveElement.props = props;
+          reactiveElement = React.createElement(reactClass, props);
+          this.renderedReactElement = React.render(reactiveElement, this); 
+        };
+        ElementProto.attributeChangedCallback = function (attr, oldVal, newVal) {
+          var props = {};
+          props[attr] = newVal;
+          this.renderedReactElement.setProps(props);
+        }
+        registrationFunction(tag, {
+          prototype: ElementProto
+        });
+      }
+
+      function registerComponentInShadowDOM(tag, reactClass) {
+        var thatDoc = document;
+        var ElementProto = Object.create(HTMLElement.prototype);
+        ElementProto.createdCallback = function() {
+          var reactiveElement = {};
+          var props = {};
+          for (var i in this.attributes) {
+              var item = this.attributes[i];
+              props[item.name] = item.value;    
+          }
+          reactiveElement.props = props;
+          reactiveElement = React.createElement(reactClass, props);
+          var shadowRoot = this.createShadowRoot();
+          var clone = thatDoc.createElement('div');
+          clone.setAttribute('id', 'reactcomponent');
+          shadowRoot.appendChild(clone);
+          this.renderedReactElement = React.render(reactiveElement, clone); 
+        };
+        ElementProto.attributeChangedCallback = function (attr, oldVal, newVal) {
+          var props = {};
+          props[attr] = newVal;
+          this.renderedReactElement.setProps(props);
+        }
+        registrationFunction(tag, {
+          prototype: ElementProto
+        });
+      }
+
+      var Timer = React.createClass({
+        displayName: 'Timer',
+        getInitialState: function() {
+          return { secondsElapsed: 0 };
+        },
+        tick: function() {
+          this.setState({ secondsElapsed: this.state.secondsElapsed + 1 });
+        },
+        componentDidMount: function() {
+          this.interval = setInterval(this.tick, 1000);
+        },
+        componentWillUnmount: function() {
+          clearInterval(this.interval);
+        },
+        reset: function() {
+          console.log('Reset secondsElapsed');
+          this.setState({ secondsElapsed: 0 });
+        },
+        render: function() {
+          return (
+            React.createElement("div", null, 
+              React.createElement("button", {type: "button", onClick: this.reset}, "Reset"), 
+              React.createElement("div", null, "Seconds Elapsed: ", this.state.secondsElapsed)
+            )
+          );
+        }
+      });
+
+      registerComponent('awesome-timer', Timer);
+      registerComponentInShadowDOM('less-awesome-timer', Timer);
+
+  })(window, document);
+</script>
