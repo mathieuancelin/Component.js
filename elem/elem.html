@@ -63,32 +63,32 @@
                 ])
             ]);
         
-            var tasks = [];
-            var text = '';
-            function NewTask(props) {
+            function NewTask(model) {
                 function deleteAllDone() {
-                    tasks = _.filter(tasks, function(item) {
+                    var tasks = _.filter(model.get('tasks'), function(item) {
                         return item.done === false;
                     });
+                    model.set('tasks', tasks);
                 }
                 function createNewTask() {
-                    if (text !== '') {
+                    var tasks = model.get('tasks');
+                    if (model.get('text') !== '') {
                         tasks.push({
                             _id: _.uniqueId('task_'),
-                            name: text,
+                            name: model.get('text'),
                             done: false
                         });
-                        text = '';
+                        model.set('text', '');
                     }
+                    model.set('tasks', tasks);
                 }
                 function storeName(e) {
-                    text = e.target.value;
+                    var text = e.target.value;
+                    model.set('text', text);
                     if (e.keyCode === 13) {
                         createNewTask();
                         e.preventDefault();
-                        return true;
                     }
-                    return false;
                 }
                 return Elem.el('div',
                     Elem.el('div', { className: 'row' }, [
@@ -99,7 +99,7 @@
                                     onchange: storeName,
                                     onkeyup: storeName,
                                     onkeydown: storeName,
-                                    value: text,
+                                    value: model.get('text'),
                                     placeholder: 'What do you have to do ?',
                                     type: 'text', className: 'form-control',
                                 }, [])
@@ -129,9 +129,9 @@
                 );    
             }
 
-            function TaskItem(props) {
+            function TaskItem(props, model) {
                 function flipTaskState() {
-                    tasks = _.map(tasks, function(item) {
+                    var tasks = _.map(model.get('tasks'), function(item) {
                         if (props.task._id === item._id) {
                             var newTask = _.clone(item);
                             newTask.done = !props.task.done;
@@ -139,6 +139,7 @@
                         }
                         return item;
                     });
+                    model.set('tasks', tasks);
                 }
                 return Elem.el('li', { className: 'list-group-item' },
                     Elem.el('div', { className: 'row' }, [
@@ -160,24 +161,26 @@
                 );
             }
 
-            function TodoApp() {
+            function TodoApp(model) {
                 return Elem.el('div', { className: 'col-md-4' }, [
                     Elem.el('h3', 'Todo List'),
-                    NewTask(),
-                    Elem.el('ul', { className: 'list-group' }, _.map(tasks, function(task) {
-                        return TaskItem({ task: task });
+                    NewTask(model),
+                    Elem.el('ul', { className: 'list-group' }, _.map(model.get('tasks'), function(task) {
+                        return TaskItem({ task: task}, model);
                     }))
                 ]);
             }
              
-            //Elem.render(RenderOnlyTodoApp, '#demo');
+            Elem.bind({
+                container: '#demo1',
+                init: function(model) {
+                    model.set('tasks', []);
+                    model.set('text', '');
+                },
+                render: TodoApp
+            });
 
-            Elem.renderComponent(function() { 
-                console.log('render');
-                return TodoApp(); 
-            }, '#demo1');
-
-            var model = new (Backbone.Model.extend())({ name: 'Hello' });
+            var model = Elem.model({ name: 'Hello' });
 
             function TextBox() {
                 function updateModel(e) {
@@ -204,7 +207,7 @@
 
             Elem.render(TextBox(), '#demo2');
 
-            function Displays() {
+            function Displays(model) {
                 return Elem.el('div', { className: 'col-md-4' }, [
                     Elem.el('h3', 'Displays'),
                     Elem.el('ul', { className: 'list-group' }, [
@@ -216,7 +219,11 @@
                 ]);   
             }
 
-            Elem.renderComponent(Displays, '#demo3', model);
+            Elem.bind({
+                container: '#demo3',
+                model: model,
+                render: Displays 
+            });
 
             Elem.bind({
                 container: '#timer',
