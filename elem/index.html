@@ -63,28 +63,28 @@
                 ])
             ]);
         
-            function NewTask(model) {
+            function NewTask(state, props) {
                 function deleteAllDone() {
-                    var tasks = _.filter(model.get('tasks'), function(item) {
+                    var tasks = _.filter(state.get('tasks'), function(item) {
                         return item.done === false;
                     });
-                    model.set('tasks', tasks);
+                    state.set('tasks', tasks);
                 }
                 function createNewTask() {
-                    var tasks = model.get('tasks');
-                    if (model.get('text') !== '') {
+                    var tasks = state.get('tasks');
+                    if (state.get('text') !== '') {
                         tasks.push({
                             _id: _.uniqueId('task_'),
-                            name: model.get('text'),
+                            name: state.get('text'),
                             done: false
                         });
-                        model.set('text', '');
+                        state.set('text', '', false);
+                        state.set('tasks', tasks);
                     }
-                    model.set('tasks', tasks);
                 }
                 function storeName(e) {
                     var text = e.target.value;
-                    model.set('text', text);
+                    state.set('text', text, false);
                     if (e.keyCode === 13) {
                         createNewTask();
                         e.preventDefault();
@@ -99,7 +99,7 @@
                                     onchange: storeName,
                                     onkeyup: storeName,
                                     onkeydown: storeName,
-                                    value: model.get('text'),
+                                    value: state.get('text'),
                                     placeholder: 'What do you have to do ?',
                                     type: 'text', className: 'form-control',
                                 }, [])
@@ -129,9 +129,9 @@
                 );    
             }
 
-            function TaskItem(props, model) {
+            function TaskItem(state, props) {
                 function flipTaskState() {
-                    var tasks = _.map(model.get('tasks'), function(item) {
+                    var tasks = _.map(state.get('tasks'), function(item) {
                         if (props.task._id === item._id) {
                             var newTask = _.clone(item);
                             newTask.done = !props.task.done;
@@ -139,7 +139,7 @@
                         }
                         return item;
                     });
-                    model.set('tasks', tasks);
+                    state.set('tasks', tasks);
                 }
                 return Elem.el('li', { className: 'list-group-item' },
                     Elem.el('div', { className: 'row' }, [
@@ -161,30 +161,30 @@
                 );
             }
 
-            function TodoApp(model) {
+            function TodoApp(state, props) {
                 return Elem.el('div', { className: 'col-md-4' }, [
                     Elem.el('h3', 'Todo List'),
-                    NewTask(model),
-                    Elem.el('ul', { className: 'list-group' }, _.map(model.get('tasks'), function(task) {
-                        return TaskItem({ task: task}, model);
+                    NewTask(state, props),
+                    Elem.el('ul', { className: 'list-group' }, _.map(state.get('tasks'), function(task) {
+                        return TaskItem(state, { task: task});
                     }))
                 ]);
             }
              
-            Elem.bind({
+            Elem.component({
                 container: '#demo1',
-                init: function(model) {
-                    model.set('tasks', []);
-                    model.set('text', '');
+                init: function(state, props) {
+                    state.set('tasks', []);
+                    state.set('text', '');
                 },
                 render: TodoApp
             });
 
-            var model = Elem.model({ name: 'Hello' });
+            var commonState = Elem.state({ name: 'Hello' });
 
             function TextBox() {
                 function updateModel(e) {
-                    model.set('name', e.target.value);
+                    commonState.set('name', e.target.value);
                 }
                 return Elem.el('div', { className: 'col-md-4' }, [
                     Elem.el('h3', 'Type your name here'),
@@ -194,7 +194,7 @@
                                 placeholder: 'Type your name',
                                 type: 'text', 
                                 className: 'form-control', 
-                                value: model.get('name'),
+                                value: commonState.get('name'),
                                 onkeydown: updateModel,
                                 onkeyup: updateModel,
                                 onkeypress: updateModel,
@@ -207,34 +207,34 @@
 
             Elem.render(TextBox(), '#demo2');
 
-            function Displays(model) {
+            function Displays(state, props) {
                 return Elem.el('div', { className: 'col-md-4' }, [
                     Elem.el('h3', 'Displays'),
                     Elem.el('ul', { className: 'list-group' }, [
-                        Elem.el('li', { className: 'list-group-item' }, 'Name : ' + model.get('name') || ''),
-                        Elem.el('li', { className: 'list-group-item' }, 'Name : ' + model.get('name') || ''),
-                        Elem.el('li', { className: 'list-group-item' }, 'Name : ' + model.get('name') || ''),
-                        Elem.el('li', { className: 'list-group-item' }, 'Name : ' + model.get('name') || ''),
+                        Elem.el('li', { className: 'list-group-item' }, 'Name : ' + state.get('name') || ''),
+                        Elem.el('li', { className: 'list-group-item' }, 'Name : ' + state.get('name') || ''),
+                        Elem.el('li', { className: 'list-group-item' }, 'Name : ' + state.get('name') || ''),
+                        Elem.el('li', { className: 'list-group-item' }, 'Name : ' + state.get('name') || ''),
                     ])
                 ]);   
             }
 
-            Elem.bind({
+            Elem.component({
                 container: '#demo3',
-                model: model,
+                state: commonState,
                 render: Displays 
             });
 
-            Elem.bind({
+            Elem.component({
                 container: '#timer',
-                init: function(model) {
-                    model.set('time', 0);
+                init: function(state, props) {
+                    state.set('time', 0);
                     setInterval(function() {
-                        model.set('time', model.get('time') + 1);
+                        state.set('time', state.get('time') + 1);
                     }, 1000);
                 },
-                render: function(model) {
-                    return Elem.el('span', 'Elapsed : ' + model.get('time'));
+                render: function(state, props) {
+                    return Elem.el('span', 'Elapsed : ' + state.get('time'));
                 }
             })
         });

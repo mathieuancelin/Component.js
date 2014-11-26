@@ -2,9 +2,8 @@ var Elem = Elem || {};
 (function(exports) {
     var debug = false;
     var voidElements = ["AREA","BASE","BR","COL","COMMAND","EMBED","HR","IMG","INPUT","KEYGEN","LINK","META","PARAM","SOURCE","TRACK","WBR"];
-    var mouseEvents = 'MouseDown MouseEnter MouseLeave MouseMove MouseOut MouseOver MouseUp';
+    var mouseEvents = 'MouseDown MouseEnter MouseLeave MouseMove MouseOut MouseOver MouseUp'.toLowerCase();
     var events = 'Wheel Scroll TouchCancel TouchEnd TouchMove TouchStart Click DoubleClick Drag DragEnd DragEnter DragExit DragLeave DragOver DragStart Drop Change Input Submit Focus Blur KeyDown KeyPress KeyUp Copy Cut Paste'.toLowerCase();
-    var __renderedNodes = {};
     function styleToString(attrs) {
         if (_.isUndefined(attrs)) return '';
         var attrsArray = _.map(_.keys(attrs), function(key) {
@@ -172,7 +171,7 @@ var Elem = Elem || {};
         }
     }   
     
-    exports.model = function(mod) {
+    exports.state = function(mod) {
         var theModel = _.extend({}, mod || {});
         var callbacks = [];
         var lastCallbacks = [];
@@ -184,15 +183,23 @@ var Elem = Elem || {};
             on: function(what, callback) { callbacks.push(callback); },
             onChange: function(callback) { callbacks.push(callback); },
             atLast: function(callback) { lastCallbacks.push(callback); },
-            set: function(key, value) {
-                if (_.isUndefined(value)) {
+            set: function(key, value, propagate) {
+                if (_.isUndefined(value) && _.isUndefined(propagate) && _.isObject(key)) {
                     _.map(_.keys(key), function(k) {
                         theModel[k] = key[k];
                         fireCallbacks(k, key[k]);   
                     });
+                } else if (_.isUndefined(propagate) && _.isObject(key)) {
+                    _.map(_.keys(key), function(k) {
+                        theModel[k] = key[k];
+                        if (value !== false) fireCallbacks(k, key[k]);   
+                    });
+                } else if (_.isUndefined(propagate) && !_.isObject(key)) {
+                    theModel[key] = value;
+                    if (value !== false) fireCallbacks(key, value);
                 } else {
                     theModel[key] = value;
-                    fireCallbacks(key, value);
+                    if (propagate !== false) fireCallbacks(key, value);
                 }
             },
             get: function(key) { return theModel[key]; },
@@ -236,14 +243,15 @@ var Elem = Elem || {};
         }
         return ret;
     };
-    exports.bind = function(opts) {
+    exports.component = function(opts) {
         var el = opts.container;
-        var model = opts.model || Elem.model();
+        var state = opts.state || Elem.state();
+        var props = opts.props || {};
         var render = opts.render;
         var eventCallbacks = {};
         var oldHandlers = [];
-        if (opts.init) { opts.init(model); }
-        $(el).on(events, function(e) { // TODO : handle mouse event in a clever way
+        if (opts.init) { opts.init(state, _.clone(props)); }
+        $(el).on(events/* + ' ' + mouseEvents */, function(e) { // bubbles listener, TODO : handle mouse event in a clever way
             var node = e.target;
             var name = node.dataset.nodeid + "_" + e.type;
             if (eventCallbacks[name]) {
@@ -266,7 +274,7 @@ var Elem = Elem || {};
             var focus = document.activeElement;
             var key = $(focus).data('key');
             var waitingHandlers = [];
-            Elem.render(render(model), el, { __waitingHandlers: waitingHandlers, __rootListener: true });
+            Elem.render(render(state, _.clone(props)), el, { __waitingHandlers: waitingHandlers, __rootListener: true });
             if (key) {
                 var focusNode = $('[data-key="' + key + '"]');
                 focusNode.focus();
@@ -282,12 +290,12 @@ var Elem = Elem || {};
                 }
             });
         }
-        rerender(); //Elem.render(render(model), el);
-        if (model.atLast) {
-            model.atLast(rerender);
+        rerender();
+        if (state.atLast) {
+            state.atLast(rerender);
         } else {
-            model.on('all', rerender);
+            state.on('all', rerender); // Do we really need to handle BackBone models
         }
-        return model;
+        return state;
     };
 })(Elem);
