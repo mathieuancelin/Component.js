@@ -180,6 +180,7 @@ var Elem = Elem || {};
             _.each(lastCallbacks, function(callback) { callback(key, value); }); 
         }
         return {
+            __id: _.uniqueId('state-'), 
             on: function(what, callback) { callbacks.push(callback); },
             onChange: function(callback) { callbacks.push(callback); },
             atLast: function(callback) { lastCallbacks.push(callback); },

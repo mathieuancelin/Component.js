@@ -9,11 +9,13 @@
         <div id="demo1"></div>
         <div id="demo2"></div>
         <div id="demo3"></div>
+        <todo-list noShadow="true"></todo-list>
         <script src="./node_modules/jquery/dist/jquery.min.js" type="text/javascript"></script>
         <script src="./node_modules/underscore/underscore-min.js" type="text/javascript"></script>
         <script src="./node_modules/backbone/backbone-min.js" type="text/javascript"></script>
         <script src="./node_modules/sugar/release/sugar-full.development.js" type="text/javascript"></script>
         <script src="./elem.js" type="text/javascript"></script>
+        <script src="./elem-webcomp.js" type="text/javascript"></script>
         <script type="text/javascript">
         $(function() {
             
@@ -173,6 +175,14 @@
              
             Elem.component({
                 container: '#demo1',
+                init: function(state, props) {
+                    state.set('tasks', []);
+                    state.set('text', '');
+                },
+                render: TodoApp
+            });
+
+            Elem.registerWebComponent('todo-list', {
                 init: function(state, props) {
                     state.set('tasks', []);
                     state.set('text', '');
